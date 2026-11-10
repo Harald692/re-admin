@@ -1,0 +1,40 @@
+name: EXE bauen
+on: [push, workflow_dispatch]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Programm bauen
+        run: dotnet build ReAdmin\ReAdmin.csproj -c Release -o out
+      - name: Installer bauen
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVer=1.0.${{ github.run_number }}" installer.iss
+      - name: Pakete zusammenstellen
+        shell: pwsh
+        run: |
+          Remove-Item out\*.pdb -ErrorAction SilentlyContinue
+          Compress-Archive -Path out\* -DestinationPath re-admin-portable.zip
+          Copy-Item Output\re-admin-Setup.exe re-admin-Setup.exe
+      - name: Als Release veröffentlichen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: re admin ${{ github.run_number }}
+          files: |
+            re-admin-Setup.exe
+            re-admin-portable.zip
+          make_latest: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: re-admin-Windows
+          path: |
+            re-admin-Setup.exe
+            re-admin-portable.zip

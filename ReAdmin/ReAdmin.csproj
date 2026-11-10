@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>ReAdmin</AssemblyName>
+    <RootNamespace>ReAdmin</RootNamespace>
+    <ApplicationIcon>Admin.ico</ApplicationIcon>
+    <Product>re admin</Product>
+    <Company>Reinbacher solution</Company>
+    <Description>re admin – Angebote, Rechnungen, Kassabelege und Finanzen</Description>
+    <Version>1.0.0</Version>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2592.51" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Admin.html" LogicalName="Admin.html" />
+  </ItemGroup>
+</Project>
