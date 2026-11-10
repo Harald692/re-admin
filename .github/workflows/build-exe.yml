@@ -23,12 +23,14 @@ jobs:
           Remove-Item out\*.pdb -ErrorAction SilentlyContinue
           Compress-Archive -Path out\* -DestinationPath re-admin-portable.zip
           Copy-Item Output\re-admin-Setup.exe re-admin-Setup.exe
+          Compress-Archive -Path re-admin-Setup.exe -DestinationPath re-admin-Setup.zip
       - name: Als Release veröffentlichen
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
           name: re admin ${{ github.run_number }}
           files: |
+            re-admin-Setup.zip
             re-admin-Setup.exe
             re-admin-portable.zip
           make_latest: true
@@ -36,5 +38,18 @@ jobs:
         with:
           name: re-admin-Windows
           path: |
-            re-admin-Setup.exe
+            re-admin-Setup.zip
             re-admin-portable.zip
+      - name: Download-Kopie im Zweig "downloads" ablegen
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dl | Out-Null
+          Copy-Item re-admin-Setup.zip,re-admin-portable.zip dl\
+          cd dl
+          git init -q
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout -q -b downloads
+          git add -A
+          git commit -q -m "re admin ${{ github.run_number }}"
+          git push -f -q "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" downloads

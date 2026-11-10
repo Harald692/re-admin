@@ -9,7 +9,7 @@ re admin – Windows-Programm (EXE) bauen
    .github/workflows/build-exe.yml und den Inhalt der gleichnamigen Datei einfuegen.
 3. Reiter "Actions": Der Lauf "EXE bauen" startet automatisch (ca. 5 Minuten).
 4. Rechts unter "Releases" die neueste Version oeffnen und herunterladen:
-   - re-admin-Setup.exe  = Installer (empfohlen): Startmenue + Desktop-Verknuepfung,
+   - re-admin-Setup.zip  = Installer in einer ZIP (entpacken, dann re-admin-Setup.exe starten): Startmenue + Desktop-Verknuepfung,
      keine Administratorrechte noetig.
    - re-admin-portable.zip = ohne Installation, entpacken und ReAdmin.exe starten.
 5. Windows warnt beim ersten Start ("Der Computer wurde durch Windows geschuetzt"),
