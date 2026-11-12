@@ -171,7 +171,7 @@ code,.mono{font-family:Consolas,"Cascadia Mono",monospace;font-size:12.5px;backg
 </head>
 <body>
 <div id="app"></div>
-<script id="app-meta" type="application/json">{"version":"2.3","date":"2026-11-10","notes":["re admin läuft als Windows-Programm (re admin.exe) mit direktem Zugriff auf den OneDrive-Ordner","PDFs öffnen sich im Standard-PDF-Programm zum Drucken"],"prev22":["Belege von der Handy-App re rec werden automatisch als Ausgabe übernommen und nach Jahr/Monat abgelegt","Das Foto aus dem re-rec-PDF kommt ins monatliche Sammel-PDF","Kassabelege-Liste markiert Belege vom Handy"],"prev21":["Neuer Name „re admin“ mit eigenem Symbol im Stil von re.kalk und re TIME","Reiter neu geordnet: „Sales Management“ (Angebote, Auftragsbestätigungen, Lieferscheine) und „Finanz Management“ (Rechnungen, Eingangsrechnungen, Kassabelege, Finanzen)","Die App-Datei heisst jetzt Admin.html, der Starter „Admin starten.cmd“"],"prev":["Neue Reiter Angebote, Auftragsbestätigungen und Lieferscheine mit eigenen fortlaufenden Nummernkreisen","Auftragsbestätigung und Lieferschein werden aus dem Angebot abgeleitet; Bestellnummer des Kunden auf AB, Lieferschein und Rechnung","Rechnung direkt aus der Auftragsbestätigung erstellen, mit Bezug auf Angebot, AB und Lieferschein","Update-Funktion: Hinweis „Update verfügbar“ und Einstellungen › Updates","Rechtscheck nach Schweizer Vorgaben in den Einstellungen; ersetzte PDFs werden im Ordner „Archiv“ aufbewahrt"]}</script>
+<script id="app-meta" type="application/json">{"version":"2.4","date":"2026-11-12","notes":["Kassabelege: lange Belege werden im Sammel-PDF in gut lesbaren Abschnitten nebeneinander gedruckt statt verkleinert","Passend zu re rec 1.1: Belege werden auf dem Handy automatisch zugeschnitten und als Scan abgelegt"],"prev23":["re admin läuft als Windows-Programm (re admin.exe) mit direktem Zugriff auf den OneDrive-Ordner","PDFs öffnen sich im Standard-PDF-Programm zum Drucken"],"prev22":["Belege von der Handy-App re rec werden automatisch als Ausgabe übernommen und nach Jahr/Monat abgelegt","Das Foto aus dem re-rec-PDF kommt ins monatliche Sammel-PDF","Kassabelege-Liste markiert Belege vom Handy"],"prev21":["Neuer Name „re admin“ mit eigenem Symbol im Stil von re.kalk und re TIME","Reiter neu geordnet: „Sales Management“ (Angebote, Auftragsbestätigungen, Lieferscheine) und „Finanz Management“ (Rechnungen, Eingangsrechnungen, Kassabelege, Finanzen)","Die App-Datei heisst jetzt Admin.html, der Starter „Admin starten.cmd“"],"prev":["Neue Reiter Angebote, Auftragsbestätigungen und Lieferscheine mit eigenen fortlaufenden Nummernkreisen","Auftragsbestätigung und Lieferschein werden aus dem Angebot abgeleitet; Bestellnummer des Kunden auf AB, Lieferschein und Rechnung","Rechnung direkt aus der Auftragsbestätigung erstellen, mit Bezug auf Angebot, AB und Lieferschein","Update-Funktion: Hinweis „Update verfügbar“ und Einstellungen › Updates","Rechtscheck nach Schweizer Vorgaben in den Einstellungen; ersetzte PDFs werden im Ordner „Archiv“ aufbewahrt"]}</script>
 
 <script>
 /* ===================== Minimaler PDF-Generator (Helvetica, WinAnsi) ===================== */
@@ -211,6 +211,7 @@ class MiniPDF{
   addImage(bin,w,h){this.imgs.push({bin,w,h});return 'Im'+this.imgs.length}
   setImage(bin,w,h){this.logo=this.addImage(bin,w,h)}
   image(x,y,w,h,name){name=name||this.logo;if(name)this.cur.push(`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} cm /${name} Do Q`)}
+  imageClip(x,y,w,h,name,cx,cy,cw,ch){this.cur.push(`q ${cx.toFixed(2)} ${(this.H-cy-ch).toFixed(2)} ${cw.toFixed(2)} ${ch.toFixed(2)} re W n ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${(this.H-y-h).toFixed(2)} cm /${name} Do Q`)}
   output(extra){
     const objs=[];const add=s=>{objs.push(s);return objs.length};
     add('<< /Type /Catalog /Pages 2 0 R >>');
@@ -1289,27 +1290,43 @@ async function buildBelegMonatsPdf(ym){
   });
   const tot=sumByCur(list,a=>+a.betrag||0),totM=sumByCur(list,a=>+a.mwst||0);
   y+=6;for(const c of Object.keys(tot)){pdf.text(L+290,y,'Total '+c,{size:10,bold:true});pdf.text(R-70,y,fmtNum(totM[c]||0),{size:10,align:'right'});pdf.text(R-4,y,fmtMoney(tot[c],c),{size:10,bold:true,align:'right'});y+=15}
-  // Belegseiten
+  // Belegseiten: lange Belege werden in Abschnitte nebeneinander/auf Folgeseiten verteilt statt verkleinert
   for(let i=0;i<list.length;i++){
-    const a=list[i];pdf.addPage();kopf(`Beleg ${i+1} von ${list.length} · ${fmtDate(a.datum)} · ${a.text} · ${fmtMoney(a.betrag,a.waehrung)}${a.kategorie?' · '+a.kategorie:''}`);
-    const f=await readFile(a.beleg.split('/'));
-    if(f&&/\.pdf$/i.test(a.beleg)){
-      const img=await jpegAusPdf(f);
-      if(img){const name=pdf.addImage(img.bin,img.w,img.h);const aw=R-L,ah=800-92,sc=Math.min(aw/img.w,ah/img.h);pdf.image(L+(aw-img.w*sc)/2,92,img.w*sc,img.h*sc,name);continue}
-    }
-    if(f&&!/\.pdf$/i.test(a.beleg)){
-      try{const bmp=await createImageBitmap(f);let bin;
-        if(/\.jpe?g$/i.test(a.beleg))bin=await blobToBin(f);else{const j=await fileToJpeg(f,0,2000);bin=await blobToBin(j.blob)}
-        const name=pdf.addImage(bin,bmp.width,bmp.height);
-        const aw=R-L,ah=800-92,sc=Math.min(aw/bmp.width,ah/bmp.height);const w=bmp.width*sc,h=bmp.height*sc;
-        pdf.image(L+(aw-w)/2,92,w,h,name);continue;
-      }catch(e){}
-    }
-    pdf.text(L,110,f?'Dieser Beleg liegt als eigene Datei vor:':'Belegdatei nicht gefunden:',{size:10});pdf.text(L,126,a.beleg,{size:9,color:gray});
+    const a=list[i],sub=`Beleg ${i+1} von ${list.length} · ${fmtDate(a.datum)} · ${a.text} · ${fmtMoney(a.betrag,a.waehrung)}${a.kategorie?' · '+a.kategorie:''}`;
+    const seite=(pg,pages)=>{pdf.addPage();kopf(sub+(pages>1?` · Seite ${pg+1}/${pages}`:''))};
+    const f=await readFile(a.beleg.split('/'));let img=null;
+    if(f&&/\.pdf$/i.test(a.beleg))img=await jpegAusPdf(f);
+    else if(f){try{if(/\.jpe?g$/i.test(a.beleg)){const bmp=await createImageBitmap(f);img={bin:await blobToBin(f),w:bmp.width,h:bmp.height}}
+      else{const j=await fileToJpeg(f,0,3000);if(j)img={bin:await blobToBin(j.blob),w:j.w,h:j.h}}}catch(e){}}
+    if(img){const name=pdf.addImage(img.bin,img.w,img.h);belegZeichnen(pdf,name,img.w,img.h,{L,R,top:92,bottom:800},seite);continue}
+    seite(0,1);pdf.text(L,110,f?'Dieser Beleg liegt als eigene Datei vor:':'Belegdatei nicht gefunden:',{size:10});pdf.text(L,126,a.beleg,{size:9,color:gray});
   }
   const bytes=pdf.output();
   await writeFile(path,new Blob([bytes],{type:'application/pdf'}));
   return bytes;
+}
+/* ---------- Lange Belege lesbar ins PDF: in Spalten nebeneinander und bei Bedarf auf Folgeseiten verteilen, statt zu verkleinern ---------- */
+function belegLayout(w,h,AW,AH){
+  const gap=16,ov=14,minCw=150,capCw=300,minFit=Math.min(AW,230),fit=Math.min(AW/w,AH/h);
+  if(w*fit>=minFit-0.5)return {fit:true,cw:w*fit,H:h*fit,n:1,slices:1,pages:1,gap,ov};
+  let best=null;
+  for(let cw=Math.min(capCw,AW);cw>=minCw;cw-=2){
+    const n=Math.max(1,Math.floor((AW+gap)/(cw+gap))),H=h*cw/w,s=H<=AH?1:Math.ceil((H-ov)/(AH-ov)),p=Math.ceil(s/n);
+    if(!best||p<best.pages)best={fit:false,cw,H,n:Math.min(n,s),slices:s,pages:p,gap,ov};
+  }
+  return best;
+}
+function belegZeichnen(pdf,name,w,h,box,neueSeite){ // box {L,R,top,bottom}; neueSeite(seitenIndex, seitenAnzahl) legt eine Seite mit Kopf an
+  const AW=box.R-box.L,AH=box.bottom-box.top,P=belegLayout(w,h,AW,AH);
+  if(P.fit){neueSeite(0,1);pdf.image(box.L+(AW-P.cw)/2,box.top,P.cw,P.H,name);return 1}
+  const breite=P.n*P.cw+(P.n-1)*P.gap,x0=box.L+(AW-breite)/2;
+  for(let i=0;i<P.slices;i++){
+    const col=i%P.n;if(col===0)neueSeite(Math.floor(i/P.n),P.pages);
+    const off=i*(AH-P.ov),sh=Math.min(AH,P.H-off),x=x0+col*(P.cw+P.gap);
+    pdf.imageClip(x,box.top-off,P.cw,P.H,name,x,box.top,P.cw,sh);
+    pdf.text(x+P.cw/2,box.top-4,`Abschnitt ${i+1} von ${P.slices}`,{size:7,color:[.55,.55,.55],align:'center'});
+  }
+  return P.pages;
 }
 async function jpegAusPdf(file){
   // liest das Belegfoto aus einem PDF von re rec / re admin (JPEG-Bild im PDF)
