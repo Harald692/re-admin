@@ -95,6 +95,9 @@ textarea{resize:vertical;min-height:60px}
 .totals{margin-left:auto;max-width:360px}
 .totals div{display:flex;justify-content:space-between;padding:4px 0;font-variant-numeric:tabular-nums}
 .totals .grand{border-top:2px solid var(--ink);margin-top:6px;padding-top:8px;font-weight:700;font-size:16px}
+.kleg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}.kleg span{display:inline-flex;align-items:center;gap:6px}.kleg i{display:inline-block;width:18px;height:3px;border-radius:2px}.kleg i.dash{height:0;border-top:2px dashed;background:none}
+.ktip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:8px;padding:6px 9px;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}.ktip span{color:var(--muted)}
+.tot2{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-variant-numeric:tabular-nums}
 .note{background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:13px}
 .note.warn{background:var(--warn-soft)}
 .bars{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;align-items:end;height:130px;margin-top:8px}
@@ -171,7 +174,7 @@ code,.mono{font-family:Consolas,"Cascadia Mono",monospace;font-size:12.5px;backg
 </head>
 <body>
 <div id="app"></div>
-<script id="app-meta" type="application/json">{"version":"2.4","date":"2026-11-12","notes":["Kassabelege: lange Belege werden im Sammel-PDF in gut lesbaren Abschnitten nebeneinander gedruckt statt verkleinert","Passend zu re rec 1.1: Belege werden auf dem Handy automatisch zugeschnitten und als Scan abgelegt"],"prev23":["re admin läuft als Windows-Programm (re admin.exe) mit direktem Zugriff auf den OneDrive-Ordner","PDFs öffnen sich im Standard-PDF-Programm zum Drucken"],"prev22":["Belege von der Handy-App re rec werden automatisch als Ausgabe übernommen und nach Jahr/Monat abgelegt","Das Foto aus dem re-rec-PDF kommt ins monatliche Sammel-PDF","Kassabelege-Liste markiert Belege vom Handy"],"prev21":["Neuer Name „re admin“ mit eigenem Symbol im Stil von re.kalk und re TIME","Reiter neu geordnet: „Sales Management“ (Angebote, Auftragsbestätigungen, Lieferscheine) und „Finanz Management“ (Rechnungen, Eingangsrechnungen, Kassabelege, Finanzen)","Die App-Datei heisst jetzt Admin.html, der Starter „Admin starten.cmd“"],"prev":["Neue Reiter Angebote, Auftragsbestätigungen und Lieferscheine mit eigenen fortlaufenden Nummernkreisen","Auftragsbestätigung und Lieferschein werden aus dem Angebot abgeleitet; Bestellnummer des Kunden auf AB, Lieferschein und Rechnung","Rechnung direkt aus der Auftragsbestätigung erstellen, mit Bezug auf Angebot, AB und Lieferschein","Update-Funktion: Hinweis „Update verfügbar“ und Einstellungen › Updates","Rechtscheck nach Schweizer Vorgaben in den Einstellungen; ersetzte PDFs werden im Ordner „Archiv“ aufbewahrt"]}</script>
+<script id="app-meta" type="application/json">{"version":"2.5","date":"2026-11-25","notes":["Neu unter Finanz Management: Wechselkurs EUR → CHF mit Chart (1 Monat bis 1 Jahr), Trend-Prognose und Einschätzung, wann sich das Umbuchen vom Euro- aufs Frankenkonto lohnt","Umbuchungsrechner, Zielkurs mit Meldung in der Übersicht, aktueller Kurs per Klick für Finanzen & Rücklage übernehmen"],"prev24":["Kassabelege: lange Belege werden im Sammel-PDF in gut lesbaren Abschnitten nebeneinander gedruckt statt verkleinert","Passend zu re rec 1.1: Belege werden auf dem Handy automatisch zugeschnitten und als Scan abgelegt"],"prev23":["re admin läuft als Windows-Programm (re admin.exe) mit direktem Zugriff auf den OneDrive-Ordner","PDFs öffnen sich im Standard-PDF-Programm zum Drucken"],"prev22":["Belege von der Handy-App re rec werden automatisch als Ausgabe übernommen und nach Jahr/Monat abgelegt","Das Foto aus dem re-rec-PDF kommt ins monatliche Sammel-PDF","Kassabelege-Liste markiert Belege vom Handy"],"prev21":["Neuer Name „re admin“ mit eigenem Symbol im Stil von re.kalk und re TIME","Reiter neu geordnet: „Sales Management“ (Angebote, Auftragsbestätigungen, Lieferscheine) und „Finanz Management“ (Rechnungen, Eingangsrechnungen, Kassabelege, Finanzen)","Die App-Datei heisst jetzt Admin.html, der Starter „Admin starten.cmd“"],"prev":["Neue Reiter Angebote, Auftragsbestätigungen und Lieferscheine mit eigenen fortlaufenden Nummernkreisen","Auftragsbestätigung und Lieferschein werden aus dem Angebot abgeleitet; Bestellnummer des Kunden auf AB, Lieferschein und Rechnung","Rechnung direkt aus der Auftragsbestätigung erstellen, mit Bezug auf Angebot, AB und Lieferschein","Update-Funktion: Hinweis „Update verfügbar“ und Einstellungen › Updates","Rechtscheck nach Schweizer Vorgaben in den Einstellungen; ersetzte PDFs werden im Ordner „Archiv“ aufbewahrt"]}</script>
 
 <script>
 /* ===================== Minimaler PDF-Generator (Helvetica, WinAnsi) ===================== */
@@ -569,7 +572,7 @@ const APP_ICON='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimH
 let view='uebersicht',year=new Date().getFullYear(),editing=null;
 const NAV=[{k:'uebersicht',t:'Übersicht'},
   {k:'sales',t:'Sales Management',subs:[['angebote','Angebote'],['auftraege','Auftragsbestätigungen'],['lieferscheine','Lieferscheine']]},
-  {k:'finanz',t:'Finanz Management',subs:[['rechnungen','Rechnungen'],['eingang','Eingangsrechnungen'],['belege','Kassabelege'],['finanzen','Finanzen & Rücklage']]},
+  {k:'finanz',t:'Finanz Management',subs:[['rechnungen','Rechnungen'],['eingang','Eingangsrechnungen'],['belege','Kassabelege'],['finanzen','Finanzen & Rücklage'],['kurs','Wechselkurs']]},
   {k:'kunden',t:'Kunden'},{k:'lieferanten',t:'Lieferanten'},{k:'einstellungen',t:'Einstellungen'},{k:'hilfe',t:'Einrichtung'}];
 const lastSub={sales:'angebote',finanz:'rechnungen'};
 function curSub(){if(view==='editor')return 'rechnungen';if(view==='dokeditor'&&editDok)return VIEW_OF[editDok.typ];return view}
@@ -591,7 +594,7 @@ function render(){
   app.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{view=b.dataset.sub;scrollTo(0,0);render()});
   $('#yearSel').onchange=e=>{year=+e.target.value;render()};
   bindUpd();
-  ({uebersicht:vUebersicht,angebote:vDokListe,auftraege:vDokListe,lieferscheine:vDokListe,dokeditor:vDokEditor,rechnungen:vRechnungen,editor:vEditor,kunden:vKunden,lieferanten:vLieferanten,finanzen:vFinanzen,belege:vBelege,eingang:vEingang,einstellungen:vEinstellungen,hilfe:vHilfe})[view]();
+  ({uebersicht:()=>{vUebersicht();kursHinweis()},kurs:vKurs,angebote:vDokListe,auftraege:vDokListe,lieferscheine:vDokListe,dokeditor:vDokEditor,rechnungen:vRechnungen,editor:vEditor,kunden:vKunden,lieferanten:vLieferanten,finanzen:vFinanzen,belege:vBelege,eingang:vEingang,einstellungen:vEinstellungen,hilfe:vHilfe})[view]();
 }
 
 /* ---------- Übersicht ---------- */
@@ -1075,6 +1078,146 @@ function ruecklagePlan(y){
   // Aufschlüsselung Fixkosten nach Kategorie (Monatsanteil)
   const proKat={};D.fixkosten.filter(f=>f.ruecklage).forEach(f=>{const a=months.filter(x=>fixSpar(f,x.key)).length;if(!a)return;proKat[f.kategorie]=(proKat[f.kategorie]||0)+toCHF(f.betrag,f.waehrung)/(+f.rhythmus||1)*a/12});
   return {months,minSaldo:r2(minSaldo),fixSchnitt:r2(fixSchnitt),varSchnitt:r2(varSchnitt),empfehlung,proKat,varJahr:r2(varJahr)};
+}
+/* ---------- Wechselkurs EUR → CHF mit Trend-Prognose ---------- */
+const KURS={daten:null,stand:0,quelle:'',bereich:'3m',betrag:''};
+function kursIso(d){return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
+function kursBeispiel(){ // nur für die Vorschau ohne Internet
+  const d=[];let v=0.935,t=new Date(Date.now()-380*864e5),s=7;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647-0.5};
+  while(t<new Date()){if(![0,6].includes(t.getDay())){v*=Math.exp(rnd()*0.006+0.00002*Math.sin(d.length/40));d.push([kursIso(t),+v.toFixed(5)])}t=new Date(t.getTime()+864e5)}
+  return d;
+}
+async function kursLaden(force){
+  let cache=null;try{cache=JSON.parse(localStorage.getItem('readmin-kurs')||'null')}catch(e){}
+  if(!force&&cache&&Date.now()-cache.t<3*3600e3){Object.assign(KURS,{daten:cache.d,stand:cache.t,quelle:cache.q,offline:false});return}
+  const von=kursIso(new Date(Date.now()-400*864e5));
+  for(const u of [`https://api.frankfurter.dev/v1/${von}..?symbols=CHF`,`https://api.frankfurter.app/${von}..?from=EUR&to=CHF`]){
+    try{const r=await fetch(u,{cache:'no-store'});if(!r.ok)continue;const j=await r.json();
+      const d=Object.keys(j.rates||{}).sort().map(k=>[k,+j.rates[k].CHF]).filter(x=>x[1]>0);
+      if(d.length>30){Object.assign(KURS,{daten:d,stand:Date.now(),quelle:'EZB-Referenzkurs über frankfurter.dev',offline:false,beispiel:false});
+        try{localStorage.setItem('readmin-kurs',JSON.stringify({t:KURS.stand,d,q:KURS.quelle}))}catch(e){}return}}catch(e){}
+  }
+  if(cache){Object.assign(KURS,{daten:cache.d,stand:cache.t,quelle:cache.q,offline:true});return}
+  if(DEMO){Object.assign(KURS,{daten:kursBeispiel(),stand:Date.now(),quelle:'Beispieldaten – keine Internetverbindung',offline:true,beispiel:true});return}
+  throw new Error('Die Kurse konnten nicht geladen werden. Bitte die Internetverbindung prüfen.');
+}
+function kursAnalyse(d){
+  const v=d.map(x=>x[1]),n=v.length,last=v[n-1],mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+  const sma=k=>v.map((_,i)=>i+1<k?null:mean(v.slice(i-k+1,i+1)));
+  const N=Math.min(60,n-1),lr=[];for(let i=n-N;i<n;i++)lr.push(Math.log(v[i]/v[i-1]));
+  const mu=mean(lr),sd=Math.sqrt(lr.reduce((s,x)=>s+(x-mu)**2,0)/(lr.length-1));
+  const ys=v.slice(n-N-1).map(Math.log),m=ys.length,xm=(m-1)/2,ym=mean(ys);let sxy=0,sxx=0;ys.forEach((y,i)=>{sxy+=(i-xm)*(y-ym);sxx+=(i-xm)**2});
+  const slope=sxy/sxx; // pro Handelstag (log)
+  const H=30,prog=[];let dt=new Date(d[n-1][0]+'T12:00:00');
+  for(let t=1;t<=H;t++){do{dt=new Date(dt.getTime()+864e5)}while([0,6].includes(dt.getDay()));
+    const drift=slope*0.5*t,s=sd*Math.sqrt(t);prog.push([kursIso(dt),last*Math.exp(drift),last*Math.exp(drift-s),last*Math.exp(drift+s)])}
+  const w=v.slice(-63),min90=Math.min(...w),max90=Math.max(...w),avg90=mean(w),pos=(last-min90)/((max90-min90)||1);
+  const wo=v.length>5?v[n-6]:v[0],trend30=(Math.exp(slope*30)-1)*100;
+  let sig;
+  if(pos>=0.67)sig={k:'gut',t:'Guter Zeitpunkt zum Umbuchen',x:`Der Euro ist gerade viel wert: Der Kurs liegt im oberen Drittel der letzten 3 Monate${trend30<0?' und der Trend zeigt eher nach unten':''}.`};
+  else if(pos<=0.33&&trend30>0.3)sig={k:'warten',t:'Eher abwarten',x:'Der Kurs liegt im unteren Drittel der letzten 3 Monate, der Trend zeigt aber nach oben. Wer Zeit hat, wartet oder bucht nur einen Teil um.'};
+  else if(pos<=0.33)sig={k:'mittel',t:'Kurs tief, keine Erholung in Sicht',x:'Der Kurs liegt im unteren Drittel und fällt eher. Wird der Franken-Betrag gebraucht, lieber in Etappen umbuchen als auf eine Erholung zu warten.'};
+  else if(trend30>0.3)sig={k:'mittel',t:'Neutral, Trend leicht steigend',x:'Der Kurs liegt im Mittelfeld der letzten 3 Monate. Abwarten kann sich lohnen; eine Teilbuchung ist vertretbar.'};
+  else sig={k:'mittel',t:'Neutral, Trend seitwärts bis fallend',x:'Der Kurs liegt im Mittelfeld der letzten 3 Monate. Ein höherer Kurs ist nicht absehbar – Umbuchen ist jetzt vertretbar.'};
+  return {v,last,sma20:sma(20),sma50:sma(50),sd,slope,trend30,prog,min90,max90,avg90,pos,woche:(last/wo-1)*100,sig};
+}
+async function vKurs(){
+  const main=$('#main');const S=D.settings;
+  main.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:6px"><h1>Wechselkurs EUR → CHF</h1>
+    <button class="btn" id="k-neu">↻ Aktualisieren</button></div>
+    <p class="sub">Wann lohnt es sich, Geld vom Euro- aufs Frankenkonto zu buchen? Je höher der Kurs, desto mehr Franken gibt es pro Euro.</p>
+    <div id="kurs"><div class="card"><span class="muted">Kurse werden geladen …</span></div></div>`;
+  $('#k-neu').onclick=async()=>{$('#kurs').innerHTML='<div class="card"><span class="muted">Kurse werden geladen …</span></div>';try{await kursLaden(true)}catch(e){}if(view==='kurs')vKurs()};
+  try{if(!KURS.daten)await kursLaden(false)}catch(e){$('#kurs').innerHTML=`<div class="card"><b>Keine Kursdaten</b><p class="muted" style="margin:6px 0 0">${h(e.message)}</p></div>`;return}
+  if(view!=='kurs')return;
+  const d=KURS.daten,A=kursAnalyse(d),n=d.length,f4=x=>(+x).toLocaleString('de-CH',{minimumFractionDigits:4,maximumFractionDigits:4});
+  const ziel=+S.kursZiel||0,p30=A.prog[A.prog.length-1],pct=x=>(x>=0?'+':'')+x.toFixed(2).replace('.',',')+' %';
+  const farbe={gut:'var(--ok)',warten:'#c77700',mittel:'var(--accent)'}[A.sig.k];
+  $('#kurs').innerHTML=`
+  ${KURS.beispiel?'<div class="note" style="margin-bottom:12px">Vorschau: keine Internetverbindung – das Chart zeigt <b>Beispieldaten</b>, nicht den echten Kurs.</div>':''}
+  <div class="grid kpis">
+    <div class="card kpi"><div class="l">1 EUR =</div><div class="v">CHF ${f4(A.last)}</div><div class="s">Stand ${fmtDate(d[n-1][0])} · Woche ${pct(A.woche)}</div></div>
+    <div class="card kpi"><div class="l">Letzte 3 Monate</div><div class="v" style="font-size:18px">${f4(A.min90)} – ${f4(A.max90)}</div><div class="s">Durchschnitt ${f4(A.avg90)}</div></div>
+    <div class="card kpi"><div class="l">Prognose in ~6 Wochen</div><div class="v" style="font-size:18px">${f4(p30[2])} – ${f4(p30[3])}</div><div class="s">wahrscheinlicher Bereich, Mitte ${f4(p30[1])}</div></div>
+    <div class="card kpi" style="border-left:4px solid ${farbe}"><div class="l">Einschätzung</div><div class="v" style="font-size:17px;color:${farbe}">${h(A.sig.t)}</div><div class="s">${h(A.sig.x)}</div></div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between;gap:8px;margin-bottom:8px">
+      <div class="row" style="gap:6px">${[['1m','1 Monat'],['3m','3 Monate'],['6m','6 Monate'],['1j','1 Jahr']].map(([k,t])=>`<button class="btn ${KURS.bereich===k?'pri':''}" data-kb="${k}">${t}</button>`).join('')}</div>
+      <div class="kleg"><span><i style="background:var(--accent)"></i>Kurs</span><span><i class="dash" style="border-color:var(--muted)"></i>Ø 20 Tage</span><span><i class="dash" style="border-color:#c77700"></i>Prognose</span><span><i style="background:rgba(199,119,0,.22);height:9px"></i>wahrscheinlicher Bereich</span>${ziel?'<span><i class="dash" style="border-color:#b8325a"></i>Zielkurs</span>':''}</div>
+    </div>
+    <div id="kchart" style="position:relative"></div>
+    <p class="muted" style="font-size:12px;margin:8px 0 0">Quelle: ${h(KURS.quelle)}${KURS.offline&&!KURS.beispiel?' (zuletzt gespeichert, gerade offline)':''}, Tageskurse an Werktagen. Die Prognose verlängert den Trend der letzten 60 Handelstage abgeschwächt; der Bereich zeigt die übliche Schwankung (etwa 2 von 3 Fällen). Das ist eine Tendenz, keine Vorhersage – niemand kann Wechselkurse verlässlich voraussagen, und es ist keine Finanzberatung.</p>
+  </div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+    <div class="card"><h3 style="margin:0 0 10px">Umbuchung rechnen</h3>
+      <label class="f">Betrag in EUR<input type="number" id="k-eur" min="0" step="100" value="${h(KURS.betrag)}" placeholder="z. B. 5000"></label>
+      <div id="k-res" style="margin-top:10px"></div></div>
+    <div class="card"><h3 style="margin:0 0 10px">Zielkurs</h3>
+      <p class="muted" style="margin:0 0 8px;font-size:13px">Ab welchem Kurs willst du umbuchen? Er erscheint als Linie im Chart, und die Übersicht meldet, sobald er erreicht ist.</p>
+      <div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">1 EUR = CHF<input type="number" id="k-ziel" step="0.001" value="${ziel?ziel:''}" placeholder="${f4(A.max90)}"></label><button class="btn pri" id="k-ziel-ok">Speichern</button></div>
+      ${ziel?`<p style="margin:10px 0 0">${A.last>=ziel?`<b style="color:var(--ok)">✓ Zielkurs erreicht</b> – aktuell ${f4(A.last)}.`:`Noch ${f4(ziel-A.last)} CHF (${pct((ziel/A.last-1)*100)}) bis zum Zielkurs.`}</p>`:''}
+      <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+      <p class="muted" style="margin:0 0 8px;font-size:13px">Umrechnungskurs für Finanzen &amp; Rücklage: ${fmtNum(S.eurKurs)}</p>
+      <button class="btn" id="k-uebern">Aktuellen Kurs ${f4(A.last)} übernehmen</button></div>
+  </div>`;
+  document.querySelectorAll('[data-kb]').forEach(b=>b.onclick=()=>{KURS.bereich=b.dataset.kb;vKurs()});
+  const rechne=()=>{const e=+$('#k-eur').value||0;KURS.betrag=$('#k-eur').value;if(!e){$('#k-res').innerHTML='<span class="muted">Betrag eingeben.</span>';return}
+    const heute=e*A.last,avg=e*A.avg90,diff=heute-avg;
+    $('#k-res').innerHTML=`<div class="tot2"><span>Heute</span><b>${fmtMoney(heute,'CHF')}</b></div>
+      <div class="tot2"><span>Beim 3-Monats-Durchschnitt</span><span>${fmtMoney(avg,'CHF')}</span></div>
+      <div class="tot2"><span>Unterschied</span><b style="color:${diff>=0?'var(--ok)':'var(--bad)'}">${diff>=0?'+':''}${fmtMoney(diff,'CHF')}</b></div>
+      <div class="tot2"><span>Bei Prognose-Mitte in ~6 Wochen</span><span>${fmtMoney(e*p30[1],'CHF')}</span></div>
+      <p class="muted" style="font-size:12px;margin:6px 0 0">Ohne Bankspesen; die Bank rechnet mit ihrem eigenen Kurs, meist etwas schlechter als der EZB-Kurs.</p>`};
+  $('#k-eur').oninput=rechne;rechne();
+  $('#k-ziel-ok').onclick=async()=>{S.kursZiel=+$('#k-ziel').value||0;await save();toast(S.kursZiel?'Zielkurs gespeichert':'Zielkurs entfernt');vKurs()};
+  $('#k-uebern').onclick=async()=>{S.eurKurs=+A.last.toFixed(4);await save();toast('Kurs übernommen');vKurs()};
+  kursChart($('#kchart'),d,A,ziel);
+}
+function kursChart(el,d,A,ziel){
+  const n=d.length,anz={'1m':22,'3m':65,'6m':130,'1j':n}[KURS.bereich]||65,s0=Math.max(0,n-anz),P=A.prog;
+  const pts=d.slice(s0).map((x,i)=>({dt:x[0],v:x[1],m:A.sma20[s0+i]})),N=pts.length+P.length;
+  const W=Math.max(320,el.clientWidth||800),Hh=Math.round(Math.min(380,Math.max(240,W*0.42))),pl=54,pr=14,pt=14,pb=30,iw=W-pl-pr,ih=Hh-pt-pb;
+  let lo=Math.min(...pts.map(p=>p.v),...P.map(p=>p[2])),hi=Math.max(...pts.map(p=>p.v),...P.map(p=>p[3]));if(ziel){lo=Math.min(lo,ziel);hi=Math.max(hi,ziel)}
+  const pad=(hi-lo)*0.08||0.005;lo-=pad;hi+=pad;
+  const X=i=>pl+iw*i/(N-1),Y=v=>pt+ih*(1-(v-lo)/(hi-lo));
+  const step=[0.001,0.002,0.005,0.01,0.02,0.05].find(s=>(hi-lo)/s<=6)||0.1,ticks=[];for(let t=Math.ceil(lo/step)*step;t<=hi;t+=step)ticks.push(t);
+  const dec=step<0.01?3:2;
+  const xl=[];const allD=pts.map(p=>p.dt).concat(P.map(p=>p[0]));let lastLab='';
+  allD.forEach((dt,i)=>{const lab=KURS.bereich==='1m'?(i%5===0?dt.slice(8,10)+'.'+dt.slice(5,7)+'.':''):(dt.slice(5,7)!==lastLab?new Date(dt+'T12:00').toLocaleDateString('de-CH',{month:'short'}):'');if(KURS.bereich!=='1m')lastLab=dt.slice(5,7);if(lab){if(xl.length&&X(i)-X(xl[xl.length-1][0])<44)xl.pop();xl.push([i,lab])}});
+  const ix=pts.length-1,line=a=>a.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');
+  const hist=line(pts.map((p,i)=>[X(i),Y(p.v)])),sma=line(pts.map((p,i)=>p.m==null?null:[X(i),Y(p.m)]).filter(Boolean));
+  const pm=line([[X(ix),Y(pts[ix].v)]].concat(P.map((p,j)=>[X(ix+1+j),Y(p[1])])));
+  const band='M'+X(ix)+' '+Y(pts[ix].v)+P.map((p,j)=>`L${X(ix+1+j).toFixed(1)} ${Y(p[3]).toFixed(1)}`).join('')+P.slice().reverse().map((p,j)=>`L${X(ix+P.length-j).toFixed(1)} ${Y(p[2]).toFixed(1)}`).join('')+'Z';
+  el.innerHTML=`<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}" style="display:block;font:11px system-ui,sans-serif" role="img" aria-label="Kursverlauf EUR in CHF mit Prognose">
+    ${ticks.map(t=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--line)"/><text x="${pl-8}" y="${Y(t)+4}" text-anchor="end" fill="var(--muted)">${t.toFixed(dec)}</text>`).join('')}
+    ${xl.map(([i,l])=>`<text x="${X(i)}" y="${Hh-10}" text-anchor="middle" fill="var(--muted)">${l}</text>`).join('')}
+    <rect x="${X(ix)}" y="${pt}" width="${W-pr-X(ix)}" height="${ih}" fill="var(--accent-soft)" opacity=".45"/>
+    <text x="${X(ix)+6}" y="${pt+12}" fill="var(--muted)">Prognose</text>
+    <path d="${band}" fill="rgba(199,119,0,.2)"/>
+    ${ziel?`<line x1="${pl}" x2="${W-pr}" y1="${Y(ziel)}" y2="${Y(ziel)}" stroke="#b8325a" stroke-dasharray="2 4" stroke-width="1.5"/><text x="${pl+6}" y="${Y(ziel)-5}" fill="#b8325a">Zielkurs ${ziel.toFixed(4)}</text>`:''}
+    <path d="${sma}" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-dasharray="5 4"/>
+    <path d="${hist}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="${pm}" fill="none" stroke="#c77700" stroke-width="2" stroke-dasharray="6 4"/>
+    <circle cx="${X(ix)}" cy="${Y(pts[ix].v)}" r="4" fill="var(--accent)" stroke="var(--panel)" stroke-width="2"/>
+    <line id="kc-l" y1="${pt}" y2="${pt+ih}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/><circle id="kc-c" r="4" fill="var(--ink)" visibility="hidden"/>
+    <rect x="${pl}" y="${pt}" width="${iw}" height="${ih}" fill="transparent" id="kc-hit"/></svg>
+    <div id="kc-tip" class="ktip" hidden></div>`;
+  const tip=el.querySelector('#kc-tip'),L=el.querySelector('#kc-l'),C=el.querySelector('#kc-c'),f4=x=>x.toLocaleString('de-CH',{minimumFractionDigits:4,maximumFractionDigits:4});
+  el.querySelector('#kc-hit').addEventListener('pointermove',e=>{const r=el.getBoundingClientRect(),i=Math.max(0,Math.min(N-1,Math.round((e.clientX-r.left-pl)/iw*(N-1))));
+    const isP=i>ix,p=isP?P[i-ix-1]:null,v=isP?p[1]:pts[i].v,dt=isP?p[0]:pts[i].dt;
+    L.setAttribute('x1',X(i));L.setAttribute('x2',X(i));L.setAttribute('visibility','visible');C.setAttribute('cx',X(i));C.setAttribute('cy',Y(v));C.setAttribute('visibility','visible');
+    tip.innerHTML=`<b>${fmtDate(dt)}</b><br>${isP?`Prognose ${f4(v)}<br><span>Bereich ${f4(p[2])} – ${f4(p[3])}</span>`:`1 EUR = CHF ${f4(v)}${pts[i].m?`<br><span>Ø 20 Tage ${f4(pts[i].m)}</span>`:''}`}`;
+    tip.hidden=false;const tx=X(i)>W-170?X(i)-tip.offsetWidth-12:X(i)+12;tip.style.left=tx+'px';tip.style.top=Math.max(0,Y(v)-50)+'px'});
+  el.querySelector('#kc-hit').addEventListener('pointerleave',()=>{tip.hidden=true;L.setAttribute('visibility','hidden');C.setAttribute('visibility','hidden')});
+}
+async function kursHinweis(){ // Übersicht: Meldung, wenn der Zielkurs erreicht ist
+  const ziel=+D.settings.kursZiel||0;if(!ziel)return;
+  try{if(!KURS.daten)await kursLaden(false)}catch(e){return}
+  if(view!=='uebersicht'||!KURS.daten||KURS.beispiel)return;const last=KURS.daten[KURS.daten.length-1][1];if(last<ziel||$('#kurs-ziel-hint'))return;
+  const n=document.createElement('div');n.className='note';n.id='kurs-ziel-hint';n.style.cssText='margin-bottom:14px;cursor:pointer';
+  n.innerHTML=`<b>Zielkurs erreicht:</b> 1 EUR = CHF ${last.toFixed(4)} (Ziel ${ziel.toFixed(4)}) – guter Moment, vom Euro- aufs Frankenkonto umzubuchen. <u>Wechselkurs ansehen</u>`;
+  n.onclick=()=>{view='kurs';render()};$('#main').prepend(n);
 }
 function vFinanzen(){
   const tabs=[['vergleich','Einnahmen & Ausgaben'],['ausgaben','Ausgaben je Monat'],['ruecklage','Fixkosten & Rücklagekonto']];
