@@ -411,7 +411,8 @@ namespace ReAdmin
                         result = new Dictionary<string, object> {
                             { "folder", folder },
                             { "name", new DirectoryInfo(folder).Name },
-                            { "exe", Application.ProductVersion } };
+                            { "exe", Application.ProductVersion },
+                            { "kurscheck", true } };
                         break;
                     case "list":
                     {
