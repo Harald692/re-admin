@@ -174,7 +174,7 @@ code,.mono{font-family:Consolas,"Cascadia Mono",monospace;font-size:12.5px;backg
 </head>
 <body>
 <div id="app"></div>
-<script id="app-meta" type="application/json">{"version":"2.5","date":"2026-11-25","notes":["Neu unter Finanz Management: Wechselkurs EUR → CHF mit Chart (1 Monat bis 1 Jahr), Trend-Prognose und Einschätzung, wann sich das Umbuchen vom Euro- aufs Frankenkonto lohnt","Umbuchungsrechner, Zielkurs mit Meldung in der Übersicht, aktueller Kurs per Klick für Finanzen & Rücklage übernehmen"],"prev24":["Kassabelege: lange Belege werden im Sammel-PDF in gut lesbaren Abschnitten nebeneinander gedruckt statt verkleinert","Passend zu re rec 1.1: Belege werden auf dem Handy automatisch zugeschnitten und als Scan abgelegt"],"prev23":["re admin läuft als Windows-Programm (re admin.exe) mit direktem Zugriff auf den OneDrive-Ordner","PDFs öffnen sich im Standard-PDF-Programm zum Drucken"],"prev22":["Belege von der Handy-App re rec werden automatisch als Ausgabe übernommen und nach Jahr/Monat abgelegt","Das Foto aus dem re-rec-PDF kommt ins monatliche Sammel-PDF","Kassabelege-Liste markiert Belege vom Handy"],"prev21":["Neuer Name „re admin“ mit eigenem Symbol im Stil von re.kalk und re TIME","Reiter neu geordnet: „Sales Management“ (Angebote, Auftragsbestätigungen, Lieferscheine) und „Finanz Management“ (Rechnungen, Eingangsrechnungen, Kassabelege, Finanzen)","Die App-Datei heisst jetzt Admin.html, der Starter „Admin starten.cmd“"],"prev":["Neue Reiter Angebote, Auftragsbestätigungen und Lieferscheine mit eigenen fortlaufenden Nummernkreisen","Auftragsbestätigung und Lieferschein werden aus dem Angebot abgeleitet; Bestellnummer des Kunden auf AB, Lieferschein und Rechnung","Rechnung direkt aus der Auftragsbestätigung erstellen, mit Bezug auf Angebot, AB und Lieferschein","Update-Funktion: Hinweis „Update verfügbar“ und Einstellungen › Updates","Rechtscheck nach Schweizer Vorgaben in den Einstellungen; ersetzte PDFs werden im Ordner „Archiv“ aufbewahrt"]}</script>
+<script id="app-meta" type="application/json">{"version":"2.6","date":"2026-11-26","notes":["Wechselkurs: Meldung am PC, wenn 1 EUR zwischen zwei frei einstellbaren Werten liegt (Standard 0.93 – 0.95); täglich geprüft","Meldebereich als grünes Band im Chart; Hinweis auch in der Übersicht"],"prev25":["Neu unter Finanz Management: Wechselkurs EUR → CHF mit Chart (1 Monat bis 1 Jahr), Trend-Prognose und Einschätzung, wann sich das Umbuchen vom Euro- aufs Frankenkonto lohnt","Umbuchungsrechner, Zielkurs mit Meldung in der Übersicht, aktueller Kurs per Klick für Finanzen & Rücklage übernehmen"],"prev24":["Kassabelege: lange Belege werden im Sammel-PDF in gut lesbaren Abschnitten nebeneinander gedruckt statt verkleinert","Passend zu re rec 1.1: Belege werden auf dem Handy automatisch zugeschnitten und als Scan abgelegt"],"prev23":["re admin läuft als Windows-Programm (re admin.exe) mit direktem Zugriff auf den OneDrive-Ordner","PDFs öffnen sich im Standard-PDF-Programm zum Drucken"],"prev22":["Belege von der Handy-App re rec werden automatisch als Ausgabe übernommen und nach Jahr/Monat abgelegt","Das Foto aus dem re-rec-PDF kommt ins monatliche Sammel-PDF","Kassabelege-Liste markiert Belege vom Handy"],"prev21":["Neuer Name „re admin“ mit eigenem Symbol im Stil von re.kalk und re TIME","Reiter neu geordnet: „Sales Management“ (Angebote, Auftragsbestätigungen, Lieferscheine) und „Finanz Management“ (Rechnungen, Eingangsrechnungen, Kassabelege, Finanzen)","Die App-Datei heisst jetzt Admin.html, der Starter „Admin starten.cmd“"],"prev":["Neue Reiter Angebote, Auftragsbestätigungen und Lieferscheine mit eigenen fortlaufenden Nummernkreisen","Auftragsbestätigung und Lieferschein werden aus dem Angebot abgeleitet; Bestellnummer des Kunden auf AB, Lieferschein und Rechnung","Rechnung direkt aus der Auftragsbestätigung erstellen, mit Bezug auf Angebot, AB und Lieferschein","Update-Funktion: Hinweis „Update verfügbar“ und Einstellungen › Updates","Rechtscheck nach Schweizer Vorgaben in den Einstellungen; ersetzte PDFs werden im Ordner „Archiv“ aufbewahrt"]}</script>
 
 <script>
 /* ===================== Minimaler PDF-Generator (Helvetica, WinAnsi) ===================== */
@@ -497,7 +497,7 @@ function defaults(){return {
     freiText:'Von der Mehrwertsteuer befreit.',
     zahlText:'{ziel} Tage Netto, ohne Abzug',
     dankText:'BESTEN DANK FÜR IHREN AUFTRAG.',gruss:'Freundliche Grüße',
-    eurKurs:0.94,usdKurs:0.80,ruecklageStart:0,mwstRuecklage:true,mwstPeriode:3,steuerProzent:0,
+    eurKurs:0.94,usdKurs:0.80,kursAlarm:{aktiv:true,min:0.93,max:0.95},ruecklageStart:0,mwstRuecklage:true,mwstPeriode:3,steuerProzent:0,
     nrKreise:{angebot:{praefix:'AN',start:{}},ab:{praefix:'AB',start:{}},ls:{praefix:'LS',start:{}}},angebotTage:30,
     angebotIntro:'Gerne unterbreiten wir Ihnen folgendes Angebot:',angebotDank:'Wir freuen uns auf Ihren Auftrag.',
     abIntro:'Vielen Dank für Ihre Bestellung. Wir bestätigen Ihren Auftrag wie folgt:',
@@ -1131,7 +1131,7 @@ async function vKurs(){
   try{if(!KURS.daten)await kursLaden(false)}catch(e){$('#kurs').innerHTML=`<div class="card"><b>Keine Kursdaten</b><p class="muted" style="margin:6px 0 0">${h(e.message)}</p></div>`;return}
   if(view!=='kurs')return;
   const d=KURS.daten,A=kursAnalyse(d),n=d.length,f4=x=>(+x).toLocaleString('de-CH',{minimumFractionDigits:4,maximumFractionDigits:4});
-  const ziel=+S.kursZiel||0,p30=A.prog[A.prog.length-1],pct=x=>(x>=0?'+':'')+x.toFixed(2).replace('.',',')+' %';
+  const AL=kursAlarmCfg(),ziel=0,p30=A.prog[A.prog.length-1],pct=x=>(x>=0?'+':'')+x.toFixed(2).replace('.',',')+' %';
   const farbe={gut:'var(--ok)',warten:'#c77700',mittel:'var(--accent)'}[A.sig.k];
   $('#kurs').innerHTML=`
   ${KURS.beispiel?'<div class="note" style="margin-bottom:12px">Vorschau: keine Internetverbindung – das Chart zeigt <b>Beispieldaten</b>, nicht den echten Kurs.</div>':''}
@@ -1144,7 +1144,7 @@ async function vKurs(){
   <div class="card">
     <div class="row" style="justify-content:space-between;gap:8px;margin-bottom:8px">
       <div class="row" style="gap:6px">${[['1m','1 Monat'],['3m','3 Monate'],['6m','6 Monate'],['1j','1 Jahr']].map(([k,t])=>`<button class="btn ${KURS.bereich===k?'pri':''}" data-kb="${k}">${t}</button>`).join('')}</div>
-      <div class="kleg"><span><i style="background:var(--accent)"></i>Kurs</span><span><i class="dash" style="border-color:var(--muted)"></i>Ø 20 Tage</span><span><i class="dash" style="border-color:#c77700"></i>Prognose</span><span><i style="background:rgba(199,119,0,.22);height:9px"></i>wahrscheinlicher Bereich</span>${ziel?'<span><i class="dash" style="border-color:#b8325a"></i>Zielkurs</span>':''}</div>
+      <div class="kleg"><span><i style="background:var(--accent)"></i>Kurs</span><span><i class="dash" style="border-color:var(--muted)"></i>Ø 20 Tage</span><span><i class="dash" style="border-color:#c77700"></i>Prognose</span><span><i style="background:rgba(199,119,0,.22);height:9px"></i>wahrscheinlicher Bereich</span>${AL.aktiv?'<span><i style="background:rgba(46,125,79,.22);height:9px"></i>Meldebereich</span>':''}</div>
     </div>
     <div id="kchart" style="position:relative"></div>
     <p class="muted" style="font-size:12px;margin:8px 0 0">Quelle: ${h(KURS.quelle)}${KURS.offline&&!KURS.beispiel?' (zuletzt gespeichert, gerade offline)':''}, Tageskurse an Werktagen. Die Prognose verlängert den Trend der letzten 60 Handelstage abgeschwächt; der Bereich zeigt die übliche Schwankung (etwa 2 von 3 Fällen). Das ist eine Tendenz, keine Vorhersage – niemand kann Wechselkurse verlässlich voraussagen, und es ist keine Finanzberatung.</p>
@@ -1153,10 +1153,12 @@ async function vKurs(){
     <div class="card"><h3 style="margin:0 0 10px">Umbuchung rechnen</h3>
       <label class="f">Betrag in EUR<input type="number" id="k-eur" min="0" step="100" value="${h(KURS.betrag)}" placeholder="z. B. 5000"></label>
       <div id="k-res" style="margin-top:10px"></div></div>
-    <div class="card"><h3 style="margin:0 0 10px">Zielkurs</h3>
-      <p class="muted" style="margin:0 0 8px;font-size:13px">Ab welchem Kurs willst du umbuchen? Er erscheint als Linie im Chart, und die Übersicht meldet, sobald er erreicht ist.</p>
-      <div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">1 EUR = CHF<input type="number" id="k-ziel" step="0.001" value="${ziel?ziel:''}" placeholder="${f4(A.max90)}"></label><button class="btn pri" id="k-ziel-ok">Speichern</button></div>
-      ${ziel?`<p style="margin:10px 0 0">${A.last>=ziel?`<b style="color:var(--ok)">✓ Zielkurs erreicht</b> – aktuell ${f4(A.last)}.`:`Noch ${f4(ziel-A.last)} CHF (${pct((ziel/A.last-1)*100)}) bis zum Zielkurs.`}</p>`:''}
+    <div class="card"><h3 style="margin:0 0 10px">Kurs-Meldung am PC</h3>
+      <p class="muted" style="margin:0 0 8px;font-size:13px">Der Kurs wird täglich geprüft – jeden Morgen um 9 Uhr (auch wenn re admin geschlossen ist; war der PC aus, sobald er läuft) und beim Arbeiten alle 3 Stunden. Liegt er im Bereich, kommt eine Windows-Meldung, höchstens einmal pro Tag.</p>
+      <label class="row" style="gap:8px;margin-bottom:8px;cursor:pointer"><input type="checkbox" id="k-al-on" ${AL.aktiv?'checked':''}> Meldung einschalten</label>
+      <div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">von (1 EUR = CHF)<input type="number" id="k-al-min" step="0.001" value="${AL.min}"></label><label class="f" style="flex:1">bis<input type="number" id="k-al-max" step="0.001" value="${AL.max}"></label><button class="btn pri" id="k-al-ok">Speichern</button></div>
+      <p style="margin:10px 0 0">${!AL.aktiv?'<span class="muted">Meldung ist ausgeschaltet.</span>':A.last>=AL.min&&A.last<=AL.max?`<b style="color:var(--ok)">✓ Kurs ${f4(A.last)} liegt im Meldebereich.</b>`:`Aktuell ${f4(A.last)} – ${A.last<AL.min?'unter':'über'} dem Meldebereich.`}</p>
+      <button class="btn" id="k-al-test" style="margin-top:8px">Test-Meldung senden</button>
       <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
       <p class="muted" style="margin:0 0 8px;font-size:13px">Umrechnungskurs für Finanzen &amp; Rücklage: ${fmtNum(S.eurKurs)}</p>
       <button class="btn" id="k-uebern">Aktuellen Kurs ${f4(A.last)} übernehmen</button></div>
@@ -1170,15 +1172,18 @@ async function vKurs(){
       <div class="tot2"><span>Bei Prognose-Mitte in ~6 Wochen</span><span>${fmtMoney(e*p30[1],'CHF')}</span></div>
       <p class="muted" style="font-size:12px;margin:6px 0 0">Ohne Bankspesen; die Bank rechnet mit ihrem eigenen Kurs, meist etwas schlechter als der EZB-Kurs.</p>`};
   $('#k-eur').oninput=rechne;rechne();
-  $('#k-ziel-ok').onclick=async()=>{S.kursZiel=+$('#k-ziel').value||0;await save();toast(S.kursZiel?'Zielkurs gespeichert':'Zielkurs entfernt');vKurs()};
+  $('#k-al-ok').onclick=async()=>{let a=+$('#k-al-min').value,b=+$('#k-al-max').value;if(!(a>0&&b>0))return toast('Bitte beide Werte eingeben');if(a>b)[a,b]=[b,a];
+    S.kursAlarm={aktiv:$('#k-al-on').checked,min:a,max:b};delete S.kursZiel;await save();try{lsSet('kursalarm-tag',null)}catch(e){}toast('Kurs-Meldung gespeichert');vKurs();kursAlarmPruefen()};
+  $('#k-al-on').onchange=()=>$('#k-al-ok').click();
+  $('#k-al-test').onclick=()=>pcMeldung('re admin – Test','So sieht die Kurs-Meldung aus: 1 EUR = CHF '+f4(A.last),'test-'+Date.now());
   $('#k-uebern').onclick=async()=>{S.eurKurs=+A.last.toFixed(4);await save();toast('Kurs übernommen');vKurs()};
-  kursChart($('#kchart'),d,A,ziel);
+  kursChart($('#kchart'),d,A,AL.aktiv?AL:null);
 }
 function kursChart(el,d,A,ziel){
   const n=d.length,anz={'1m':22,'3m':65,'6m':130,'1j':n}[KURS.bereich]||65,s0=Math.max(0,n-anz),P=A.prog;
   const pts=d.slice(s0).map((x,i)=>({dt:x[0],v:x[1],m:A.sma20[s0+i]})),N=pts.length+P.length;
   const W=Math.max(320,el.clientWidth||800),Hh=Math.round(Math.min(380,Math.max(240,W*0.42))),pl=54,pr=14,pt=14,pb=30,iw=W-pl-pr,ih=Hh-pt-pb;
-  let lo=Math.min(...pts.map(p=>p.v),...P.map(p=>p[2])),hi=Math.max(...pts.map(p=>p.v),...P.map(p=>p[3]));if(ziel){lo=Math.min(lo,ziel);hi=Math.max(hi,ziel)}
+  let lo=Math.min(...pts.map(p=>p.v),...P.map(p=>p[2])),hi=Math.max(...pts.map(p=>p.v),...P.map(p=>p[3]));if(ziel){lo=Math.min(lo,ziel.min-0.002);hi=Math.max(hi,ziel.max+0.002)}
   const pad=(hi-lo)*0.08||0.005;lo-=pad;hi+=pad;
   const X=i=>pl+iw*i/(N-1),Y=v=>pt+ih*(1-(v-lo)/(hi-lo));
   const step=[0.001,0.002,0.005,0.01,0.02,0.05].find(s=>(hi-lo)/s<=6)||0.1,ticks=[];for(let t=Math.ceil(lo/step)*step;t<=hi;t+=step)ticks.push(t);
@@ -1195,7 +1200,7 @@ function kursChart(el,d,A,ziel){
     <rect x="${X(ix)}" y="${pt}" width="${W-pr-X(ix)}" height="${ih}" fill="var(--accent-soft)" opacity=".45"/>
     <text x="${X(ix)+6}" y="${pt+12}" fill="var(--muted)">Prognose</text>
     <path d="${band}" fill="rgba(199,119,0,.2)"/>
-    ${ziel?`<line x1="${pl}" x2="${W-pr}" y1="${Y(ziel)}" y2="${Y(ziel)}" stroke="#b8325a" stroke-dasharray="2 4" stroke-width="1.5"/><text x="${pl+6}" y="${Y(ziel)-5}" fill="#b8325a">Zielkurs ${ziel.toFixed(4)}</text>`:''}
+    ${ziel?`<rect x="${pl}" width="${iw}" y="${Y(ziel.max)}" height="${Y(ziel.min)-Y(ziel.max)}" fill="rgba(46,125,79,.13)"/><line x1="${pl}" x2="${W-pr}" y1="${Y(ziel.max)}" y2="${Y(ziel.max)}" stroke="var(--ok)" stroke-dasharray="2 4"/><line x1="${pl}" x2="${W-pr}" y1="${Y(ziel.min)}" y2="${Y(ziel.min)}" stroke="var(--ok)" stroke-dasharray="2 4"/><text x="${pl+6}" y="${Y(ziel.max)+13}" fill="var(--ok)">Meldebereich ${ziel.min.toFixed(3)} – ${ziel.max.toFixed(3)}</text>`:''}
     <path d="${sma}" fill="none" stroke="var(--muted)" stroke-width="1.4" stroke-dasharray="5 4"/>
     <path d="${hist}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/>
     <path d="${pm}" fill="none" stroke="#c77700" stroke-width="2" stroke-dasharray="6 4"/>
@@ -1211,12 +1216,27 @@ function kursChart(el,d,A,ziel){
     tip.hidden=false;const tx=X(i)>W-170?X(i)-tip.offsetWidth-12:X(i)+12;tip.style.left=tx+'px';tip.style.top=Math.max(0,Y(v)-50)+'px'});
   el.querySelector('#kc-hit').addEventListener('pointerleave',()=>{tip.hidden=true;L.setAttribute('visibility','hidden');C.setAttribute('visibility','hidden')});
 }
-async function kursHinweis(){ // Übersicht: Meldung, wenn der Zielkurs erreicht ist
-  const ziel=+D.settings.kursZiel||0;if(!ziel)return;
+function kursAlarmCfg(){const a=D.settings.kursAlarm||{};return {aktiv:a.aktiv!==false,min:+a.min||0.93,max:+a.max||0.95}}
+async function pcMeldung(titel,text,key){ // Windows-Meldung über re admin.exe; sonst Browser-Meldung bzw. Hinweis in der App
+  if(NATIVE){try{await nat.call('notify',{title:titel,text,key});return true}catch(e){}}
+  try{if('Notification' in window){if(Notification.permission==='default')await Notification.requestPermission();if(Notification.permission==='granted'){new Notification(titel,{body:text});return true}}}catch(e){}
+  toast(text);return false;
+}
+async function kursAlarmPruefen(){
+  const AL=kursAlarmCfg();if(!AL.aktiv)return;
+  try{await kursLaden(false)}catch(e){return}
+  if(!KURS.daten||KURS.beispiel)return;const last=KURS.daten[KURS.daten.length-1][1],tag=todayISO();
+  if(last<AL.min||last>AL.max)return;
+  if(lsGet('kursalarm-tag')===tag)return;lsSet('kursalarm-tag',tag);
+  await pcMeldung('re admin – Wechselkurs',`1 EUR = CHF ${last.toFixed(4)} liegt im Meldebereich ${AL.min.toFixed(3)} – ${AL.max.toFixed(3)}. Guter Moment, vom Euro- aufs Frankenkonto umzubuchen.`,'kurs-'+tag);
+  if(view==='uebersicht')kursHinweis();
+}
+async function kursHinweis(){ // Übersicht: Hinweis, solange der Kurs im Meldebereich liegt
+  const AL=kursAlarmCfg();if(!AL.aktiv)return;
   try{if(!KURS.daten)await kursLaden(false)}catch(e){return}
-  if(view!=='uebersicht'||!KURS.daten||KURS.beispiel)return;const last=KURS.daten[KURS.daten.length-1][1];if(last<ziel||$('#kurs-ziel-hint'))return;
+  if(view!=='uebersicht'||!KURS.daten||KURS.beispiel)return;const last=KURS.daten[KURS.daten.length-1][1];if(last<AL.min||last>AL.max||$('#kurs-ziel-hint'))return;
   const n=document.createElement('div');n.className='note';n.id='kurs-ziel-hint';n.style.cssText='margin-bottom:14px;cursor:pointer';
-  n.innerHTML=`<b>Zielkurs erreicht:</b> 1 EUR = CHF ${last.toFixed(4)} (Ziel ${ziel.toFixed(4)}) – guter Moment, vom Euro- aufs Frankenkonto umzubuchen. <u>Wechselkurs ansehen</u>`;
+  n.innerHTML=`<b>Wechselkurs im Meldebereich:</b> 1 EUR = CHF ${last.toFixed(4)} (Bereich ${AL.min.toFixed(3)} – ${AL.max.toFixed(3)}) – guter Moment, vom Euro- aufs Frankenkonto umzubuchen. <u>Wechselkurs ansehen</u>`;
   n.onclick=()=>{view='kurs';render()};$('#main').prepend(n);
 }
 function vFinanzen(){
@@ -2011,6 +2031,7 @@ function afterStart(){
     else setTimeout(()=>{const m=modal(`<h2>Update gespeichert</h2><p>Version ${h(t)} liegt jetzt als <code>${h(APP_FILE)}</code> in deinem OneDrive-Ordner. Diese App wurde aber von einem anderen Ort gestartet und zeigt noch Version ${h(APP_VERSION)}.</p><p>Starte die App künftig mit <b>Admin starten.cmd</b> aus dem OneDrive-Ordner.</p><div class="row end"><button class="btn pri" id="ux">Verstanden</button></div>`);m.querySelector('#ux').onclick=()=>m.remove()},400)}
   checkUpdate(false);
   setTimeout(async()=>{const n=await importiereHandyBelege(true);if(n){toast(`${n===1?'1 Beleg':n+' Belege'} von re rec übernommen`);render()}},800);
+  setTimeout(kursAlarmPruefen,2500);if(!Upd.kursTimer)Upd.kursTimer=setInterval(kursAlarmPruefen,3*3600e3);
   if(!Upd.belegTimer){Upd.belegTimer=setInterval(async()=>{if(document.visibilityState!=='visible')return;const n=await importiereHandyBelege(true);if(n){toast(`${n===1?'1 Beleg':n+' Belege'} von re rec übernommen`);if(['belege','finanzen','uebersicht'].includes(view))render()}},3*60*1000)}
   if(!Upd.timer){Upd.timer=setInterval(()=>checkUpdate(false),30*60*1000);
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&(!Upd.last||Date.now()-Upd.last>30*60*1000))checkUpdate(false)})}

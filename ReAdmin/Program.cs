@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Net;
+using System.Security;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18,11 +20,170 @@ namespace ReAdmin
     static class Program
     {
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            if (Array.Exists(args, a => string.Equals(a, "--kurscheck", StringComparison.OrdinalIgnoreCase)))
+            {
+                KursCheck.Run();
+                return;
+            }
             Application.Run(new MainForm());
+        }
+    }
+
+    // Gemeinsamer Speicher: welche Meldungen schon gezeigt wurden (damit höchstens eine pro Tag kommt)
+    static class Meldung
+    {
+        public static readonly string Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "re admin");
+        static string StateFile { get { return Path.Combine(Dir, "meldungen.txt"); } }
+
+        public static bool SchonGezeigt(string key)
+        {
+            try { return File.Exists(StateFile) && Array.IndexOf(File.ReadAllLines(StateFile), key) >= 0; }
+            catch { return false; }
+        }
+
+        public static void Merken(string key)
+        {
+            try
+            {
+                Directory.CreateDirectory(Dir);
+                var l = new List<string>(File.Exists(StateFile) ? File.ReadAllLines(StateFile) : new string[0]);
+                l.Add(key);
+                if (l.Count > 60) l.RemoveRange(0, l.Count - 60);
+                File.WriteAllLines(StateFile, l.ToArray());
+            }
+            catch { }
+        }
+
+        public static Icon AppIcon()
+        {
+            try { return Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { return SystemIcons.Information; }
+        }
+    }
+
+    // Täglicher Kurs-Check (Windows-Aufgabenplanung startet "ReAdmin.exe --kurscheck")
+    static class KursCheck
+    {
+        public const string TaskName = "re admin Kurscheck";
+        static readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
+
+        static Dictionary<string, object> ReadJson(string file)
+        {
+            return json.Deserialize<Dictionary<string, object>>(File.ReadAllText(file, Encoding.UTF8));
+        }
+
+        // Meldebereich aus daten.json im re-admin-Ordner (Standard 0.93 – 0.95)
+        static bool Einstellungen(out bool aktiv, out double min, out double max)
+        {
+            aktiv = true; min = 0.93; max = 0.95;
+            try
+            {
+                var cfg = ReadJson(Path.Combine(Meldung.Dir, "config.json"));
+                object f;
+                if (!cfg.TryGetValue("folder", out f)) return true;
+                string daten = Path.Combine((string)f, "daten.json");
+                if (!File.Exists(daten)) return true;
+                var d = ReadJson(daten);
+                object st, ka;
+                var s = d.TryGetValue("settings", out st) ? st as Dictionary<string, object> : null;
+                var a = s != null && s.TryGetValue("kursAlarm", out ka) ? ka as Dictionary<string, object> : null;
+                if (a == null) return true;
+                object v;
+                if (a.TryGetValue("aktiv", out v) && v is bool) aktiv = (bool)v;
+                if (a.TryGetValue("min", out v) && v != null) min = Convert.ToDouble(v, System.Globalization.CultureInfo.InvariantCulture);
+                if (a.TryGetValue("max", out v) && v != null) max = Convert.ToDouble(v, System.Globalization.CultureInfo.InvariantCulture);
+                if (min > max) { var t = min; min = max; max = t; }
+            }
+            catch { }
+            return true;
+        }
+
+        static double KursLaden()
+        {
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            string[] urls = { "https://api.frankfurter.dev/v1/latest?symbols=CHF", "https://api.frankfurter.app/latest?from=EUR&to=CHF" };
+            for (int versuch = 0; versuch < 6; versuch++)
+            {
+                foreach (var u in urls)
+                {
+                    try
+                    {
+                        using (var wc = new WebClient())
+                        {
+                            wc.Encoding = Encoding.UTF8;
+                            wc.Headers[HttpRequestHeader.UserAgent] = "re admin";
+                            var d = json.Deserialize<Dictionary<string, object>>(wc.DownloadString(u));
+                            var r = d["rates"] as Dictionary<string, object>;
+                            double k = Convert.ToDouble(r["CHF"], System.Globalization.CultureInfo.InvariantCulture);
+                            if (k > 0) return k;
+                        }
+                    }
+                    catch { }
+                }
+                System.Threading.Thread.Sleep(60000); // z. B. direkt nach dem Hochfahren noch kein Netz
+            }
+            return 0;
+        }
+
+        public static void Run()
+        {
+            bool aktiv; double min, max;
+            Einstellungen(out aktiv, out min, out max);
+            if (!aktiv) return;
+            string key = "kurs-" + DateTime.Now.ToString("yyyy-MM-dd");
+            if (Meldung.SchonGezeigt(key)) return;
+            double k = KursLaden();
+            if (k <= 0 || k < min || k > max) return;
+            Meldung.Merken(key);
+            var ci = new System.Globalization.CultureInfo("de-CH");
+            using (var tray = new NotifyIcon { Icon = Meldung.AppIcon(), Text = "re admin – Wechselkurs", Visible = true })
+            {
+                var timer = new Timer { Interval = 180000 };
+                timer.Tick += (s, e) => Application.Exit();
+                tray.BalloonTipClicked += (s, e) =>
+                {
+                    try { Process.Start(new ProcessStartInfo(Application.ExecutablePath) { UseShellExecute = true }); } catch { }
+                    Application.Exit();
+                };
+                tray.Click += (s, e) => { try { Process.Start(Application.ExecutablePath); } catch { } Application.Exit(); };
+                tray.ShowBalloonTip(30000, "re admin – Wechselkurs",
+                    "1 EUR = CHF " + k.ToString("0.0000", ci) + " liegt im Meldebereich " + min.ToString("0.000", ci) + " – " + max.ToString("0.000", ci) +
+                    ". Guter Moment, vom Euro- aufs Frankenkonto umzubuchen.", ToolTipIcon.Info);
+                timer.Start();
+                Application.Run();
+                tray.Visible = false;
+            }
+        }
+
+        // Legt die tägliche Aufgabe (9 Uhr, bei verpasstem Termin sobald möglich) für den angemeldeten Benutzer an
+        public static void AufgabeEinrichten()
+        {
+            try
+            {
+                string exe = Application.ExecutablePath;
+                string mark = Path.Combine(Meldung.Dir, "kurscheck-aufgabe.txt");
+                if (File.Exists(mark) && File.ReadAllText(mark) == exe) return;
+                string xml = "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\r\n" +
+                    "<Task version=\"1.2\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">" +
+                    "<RegistrationInfo><Description>re admin: prüft täglich den Wechselkurs EUR/CHF und meldet, wenn er im Meldebereich liegt.</Description></RegistrationInfo>" +
+                    "<Triggers><CalendarTrigger><StartBoundary>2026-01-01T09:00:00</StartBoundary><Enabled>true</Enabled><ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay></CalendarTrigger></Triggers>" +
+                    "<Principals><Principal id=\"Author\"><LogonType>InteractiveToken</LogonType><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>" +
+                    "<Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries><StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>" +
+                    "<StartWhenAvailable>true</StartWhenAvailable><ExecutionTimeLimit>PT15M</ExecutionTimeLimit><Enabled>true</Enabled></Settings>" +
+                    "<Actions Context=\"Author\"><Exec><Command>" + SecurityElement.Escape(exe) + "</Command><Arguments>--kurscheck</Arguments></Exec></Actions></Task>";
+                Directory.CreateDirectory(Meldung.Dir);
+                string tmp = Path.Combine(Path.GetTempPath(), "re-admin-kurscheck.xml");
+                File.WriteAllText(tmp, xml, Encoding.Unicode);
+                var p = Process.Start(new ProcessStartInfo("schtasks.exe", "/Create /F /TN \"" + TaskName + "\" /XML \"" + tmp + "\"")
+                { CreateNoWindow = true, UseShellExecute = false, WindowStyle = ProcessWindowStyle.Hidden });
+                p.WaitForExit(20000);
+                if (p.ExitCode == 0) File.WriteAllText(mark, exe);
+                try { File.Delete(tmp); } catch { }
+            }
+            catch { }
         }
     }
 
@@ -35,6 +196,19 @@ namespace ReAdmin
         readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
         readonly string cfgDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "re admin");
         string folder;
+        NotifyIcon tray;
+
+        void ShowBalloon(string title, string text)
+        {
+            if (tray == null)
+            {
+                tray = new NotifyIcon { Icon = Meldung.AppIcon(), Text = "re admin" };
+                tray.BalloonTipClicked += (s, e) => { if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal; Activate(); };
+                FormClosed += (s, e) => { tray.Visible = false; tray.Dispose(); };
+            }
+            tray.Visible = true;
+            tray.ShowBalloonTip(20000, title, text, ToolTipIcon.Info);
+        }
 
         public MainForm()
         {
@@ -144,6 +318,7 @@ namespace ReAdmin
                 folder = PickFolder();
                 if (folder == null) { Close(); return; }
             }
+            Task.Run(() => KursCheck.AufgabeEinrichten());
             try { EnsureHtml(); }
             catch (Exception ex) { MessageBox.Show(this, "Admin.html konnte nicht in den Ordner geschrieben werden:\n" + ex.Message, "re admin"); }
 
@@ -289,6 +464,15 @@ namespace ReAdmin
                         string f = Path.Combine(dir, name);
                         File.WriteAllBytes(f, Convert.FromBase64String(Convert.ToString(Get(m, "b64")) ?? ""));
                         Process.Start(new ProcessStartInfo(f) { UseShellExecute = true });
+                        result = true;
+                        break;
+                    }
+                    case "notify":
+                    {
+                        string key = Convert.ToString(Get(m, "key"));
+                        if (!string.IsNullOrEmpty(key) && Meldung.SchonGezeigt(key)) { result = false; break; }
+                        if (!string.IsNullOrEmpty(key)) Meldung.Merken(key);
+                        ShowBalloon(Convert.ToString(Get(m, "title")) ?? "re admin", Convert.ToString(Get(m, "text")) ?? "");
                         result = true;
                         break;
                     }

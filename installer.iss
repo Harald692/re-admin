@@ -35,3 +35,6 @@ Name: "{autodesktop}\re admin"; Filename: "{app}\ReAdmin.exe"; Tasks: desktopico
 
 [Run]
 Filename: "{app}\ReAdmin.exe"; Description: "re admin jetzt starten"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+Filename: "schtasks.exe"; Parameters: "/Delete /TN ""re admin Kurscheck"" /F"; Flags: runhidden; RunOnceId: "KurscheckEntfernen"
